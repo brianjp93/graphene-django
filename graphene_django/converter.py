@@ -87,7 +87,6 @@ def convert_field_to_id(field, registry=None):
 @convert_django_field.register(models.PositiveIntegerField)
 @convert_django_field.register(models.PositiveSmallIntegerField)
 @convert_django_field.register(models.SmallIntegerField)
-@convert_django_field.register(models.BigIntegerField)
 @convert_django_field.register(models.IntegerField)
 def convert_field_to_int(field, registry=None):
     return Int(description=field.help_text, required=not field.null)
@@ -105,6 +104,7 @@ def convert_field_to_nullboolean(field, registry=None):
 
 @convert_django_field.register(models.DecimalField)
 @convert_django_field.register(models.FloatField)
+@convert_django_field.register(models.BigIntegerField)
 @convert_django_field.register(models.DurationField)
 def convert_field_to_float(field, registry=None):
     return Float(description=field.help_text, required=not field.null)
