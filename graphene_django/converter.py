@@ -3,9 +3,12 @@ from django.utils.encoding import force_text
 
 from graphene import (ID, Boolean, Dynamic, Enum, Field, Float, Int, List,
                       NonNull, String)
+from graphql.language import ast
 from graphene.relay import is_node
+from graphene.types import Scalar
 from graphene.types.datetime import DateTime, Time
 from graphene.types.json import JSONString
+from graphene.types.scalars import MIN_INT, MAX_INT
 from graphene.utils.str_converters import to_camel_case, to_const
 from graphql import assert_valid_name
 
@@ -14,6 +17,31 @@ from .fields import get_connection_field, DjangoListField
 from .utils import get_related_model, import_single_dispatch
 
 singledispatch = import_single_dispatch()
+
+
+class BigInt(Scalar):
+    """
+    BigInt is an extension of the regular Int field
+        that supports Integers bigger than a signed
+        32-bit integer.
+    """
+    @staticmethod
+    def long_to_string(value):
+        num = int(value)
+        if num > MAX_INT or num < MIN_INT:
+            return float(int(num))
+        return num
+
+    serialize = long_to_string
+    parse_value = long_to_string
+
+    @staticmethod
+    def parse_literal(node):
+        if isinstance(node, ast.IntValue):
+            num = int(node.value)
+            if num > MAX_INT or num < MIN_INT:
+                return float(int(num))
+            return num
 
 
 def convert_choice_name(name):
@@ -104,10 +132,14 @@ def convert_field_to_nullboolean(field, registry=None):
 
 @convert_django_field.register(models.DecimalField)
 @convert_django_field.register(models.FloatField)
-@convert_django_field.register(models.BigIntegerField)
 @convert_django_field.register(models.DurationField)
 def convert_field_to_float(field, registry=None):
     return Float(description=field.help_text, required=not field.null)
+
+
+@convert_django_field.register(models.BigIntegerField)
+def convert_field_to_bigint(field, registry=None):
+    return BigInt(description=field.help_text, required=not field.null)
 
 
 @convert_django_field.register(models.DateField)
